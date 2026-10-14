@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>GordonGeoSteer</RootNamespace>
+    <AssemblyName>GordonGeoSteer</AssemblyName>
+    <Version>0.1.0</Version>
+    <Company>Gordon Technologies</Company>
+    <Product>GordonGeoSteer</Product>
+    <Description>GordonGeoSteer v1 - PZS project import and browse</Description>
+  </PropertyGroup>
+
+  <!--
+    The import engine (tools/PzsImporter, .NET Framework 3.5 / x86) is a separate executable.
+    If it has been built (tools\PzsImporter\build.cmd), copy it next to the app so the app can find it
+    at PzsImporter\PzsImporter.exe. The app never references it as a library - it only runs it as a process.
+  -->
+  <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)..\..\tools\PzsImporter\bin\PzsImporter.exe')">
+    <None Include="$(MSBuildThisFileDirectory)..\..\tools\PzsImporter\bin\PzsImporter.exe"
+          Link="PzsImporter\PzsImporter.exe"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>
