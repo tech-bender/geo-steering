@@ -130,6 +130,5 @@ public sealed class ViewSpec
     public double? TvdMax { get; set; }
     public double? TvtMin { get; set; }
     public double? TvtMax { get; set; }
-    public double? HorizontalPaneHeight { get; set; }
     public bool? ShowProperties { get; set; }
 }
