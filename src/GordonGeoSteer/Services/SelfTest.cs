@@ -15,6 +15,7 @@ namespace GordonGeoSteer.Services;
 ///   report\viewmodel-dump.txt      DebugDump of everything the view-models hold
 ///   report\ui_*.png                WPF render of the window for key views
 ///   report\screen_*.png            real desktop screen capture of the window (best effort, GDI BitBlt)
+///   report\ui_steer_*.png          steering-view renders (see SteeringSelfTest); report\engine-validation.txt
 /// </summary>
 public static class SelfTest
 {
@@ -46,6 +47,11 @@ public static class SelfTest
             win.Width = 1400; win.Height = 860;
             win.Left = 20; win.Top = 20;
             win.Topmost = true; // so the screen capture shows this window, not whatever is in front
+
+            // The steering workspace goes into the report folder, never the user's own workspace store.
+            string wsPath = Path.Combine(dir, "selftest-workspace.gws.json");
+            if (File.Exists(wsPath)) File.Delete(wsPath);
+            vm.WorkspacePathOverride = wsPath;
 
             bool loaded;
             if (args.TryGetValue("import", out var src) && src.Length > 0)
@@ -103,6 +109,10 @@ public static class SelfTest
                 string screenMsg = TryScreenCapture(win, Path.Combine(dir, $"screen_{file}.png"));
                 Log($"screenshot {file}: '{n.Header}' (screen capture: {screenMsg})");
             }
+
+            // Steering view (v2): renders, zoom checks, workspace round trip, engine validation.
+            Log("steering view self-test:");
+            errors += await SteeringSelfTest.RunAsync(win, dir, Log);
         }
         catch (Exception ex)
         {
