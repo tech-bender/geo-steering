@@ -1,0 +1,300 @@
+<UserControl x:Class="GordonGeoSteer.Views.SteeringView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:st="clr-namespace:GordonGeoSteer.ViewModels.Steering"
+             xmlns:sc="clr-namespace:GordonGeoSteer.Controls.Steering"
+             xmlns:local="clr-namespace:GordonGeoSteer.Views"
+             x:Name="root" FontFamily="Segoe UI" FontSize="12">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <local:SubtractConverter x:Key="MinusAxis" Amount="60" />
+        <Style x:Key="Lbl" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,2,6,2" />
+            <Setter Property="Foreground" Value="#333" />
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Margin" Value="0,2" />
+            <Setter Property="Padding" Value="2,1" />
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="Margin" Value="0,2" />
+        </Style>
+        <Style TargetType="GroupBox">
+            <Setter Property="Margin" Value="0,6,0,0" />
+            <Setter Property="Padding" Value="4" />
+        </Style>
+        <Style x:Key="ToolBtn" TargetType="Button">
+            <Setter Property="Padding" Value="6,2" />
+            <Setter Property="Margin" Value="1,0" />
+        </Style>
+        <Style x:Key="PanelBtn" TargetType="Button">
+            <Setter Property="Padding" Value="6,2" />
+            <Setter Property="Margin" Value="0,2,4,2" />
+        </Style>
+        <!-- colour picker: editable combo of swatches, accepts any #RRGGBB / named colour -->
+        <DataTemplate x:Key="Swatch">
+            <StackPanel Orientation="Horizontal">
+                <Border Width="22" Height="12" BorderBrush="#888" BorderThickness="1" Background="{Binding}" Margin="0,0,6,0" />
+                <TextBlock Text="{Binding}" />
+            </StackPanel>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <DockPanel>
+        <ToolBarTray DockPanel.Dock="Top">
+            <ToolBar Band="0">
+                <TextBlock Style="{StaticResource Lbl}" Text="Reference bed:" />
+                <ComboBox Width="190" ItemsSource="{Binding BedNames}" SelectedItem="{Binding ReferenceBed}" ToolTip="TVT = 0 at this bed" />
+                <TextBlock Style="{StaticResource Lbl}" Text="  Correlation:" />
+                <ComboBox Width="170" ItemsSource="{x:Static st:SteeringViewModel.Modes}" SelectedItem="{Binding Mode}"
+                          ToolTip="ParallelToReference: TVT = TVD - reference bed depth (spec). DepthIndexStretch: PZS-style stretch between gridded beds." />
+                <Separator />
+                <TextBlock Style="{StaticResource Lbl}" Text="Zoom" />
+                <Button Style="{StaticResource ToolBtn}" Content="VS +" Click="ZoomXIn" ToolTip="Zoom curtain + horizontal tracks in horizontally (Ctrl+wheel)" />
+                <Button Style="{StaticResource ToolBtn}" Content="VS -" Click="ZoomXOut" />
+                <Button Style="{StaticResource ToolBtn}" Content="TVD +" Click="ZoomYIn" ToolTip="Zoom curtain in vertically (Shift+wheel)" />
+                <Button Style="{StaticResource ToolBtn}" Content="TVD -" Click="ZoomYOut" />
+                <Button Style="{StaticResource ToolBtn}" Content="TVT +" Click="ZoomTIn" ToolTip="Zoom the vertical tracks" />
+                <Button Style="{StaticResource ToolBtn}" Content="TVT -" Click="ZoomTOut" />
+                <Button Style="{StaticResource ToolBtn}" Content="Reset view" Click="ResetView" ToolTip="Double-click a plot to reset just that plot" />
+                <Separator />
+                <Button Style="{StaticResource ToolBtn}" Content="+ Vertical track" Click="AddVertical" />
+                <Button Style="{StaticResource ToolBtn}" Content="+ Horizontal track" Click="AddHorizontal" />
+                <Separator />
+                <Button Style="{StaticResource ToolBtn}" Content="Save workspace" Click="SaveWs" ToolTip="{Binding WorkspacePath}" />
+                <Button Style="{StaticResource ToolBtn}" Content="Load..." Click="LoadWs" />
+                <ToggleButton Padding="6,2" Content="Properties" IsChecked="{Binding ShowProperties}" />
+            </ToolBar>
+        </ToolBarTray>
+
+        <StatusBar DockPanel.Dock="Bottom">
+            <StatusBarItem><TextBlock Text="{Binding CursorText}" FontFamily="Consolas" /></StatusBarItem>
+            <Separator />
+            <StatusBarItem><TextBlock Text="{Binding Status}" TextTrimming="CharacterEllipsis" Foreground="#555" /></StatusBarItem>
+        </StatusBar>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="3*" MinWidth="300" />
+                <ColumnDefinition Width="5" />
+                <ColumnDefinition Width="2*" MinWidth="120" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <!-- left: horizontal tracks above the curtain, sharing its vertical-section axis -->
+            <Grid Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" MinHeight="150" />
+                </Grid.RowDefinitions>
+                <ItemsControl ItemsSource="{Binding HorizontalTracks}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type st:TrackViewModel}">
+                            <Border BorderBrush="#D0D0D0" BorderThickness="0,0,0,1">
+                                <sc:LogTrackControl Height="{Binding Size}" Track="{Binding}"
+                                                    Steering="{Binding DataContext, ElementName=root}" />
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <sc:CurtainControl x:Name="curtain" Grid.Row="1" Steering="{Binding}" />
+            </Grid>
+
+            <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" Background="#E0E0E0" />
+
+            <!-- middle: vertical TVT tracks + TVT axis -->
+            <Grid Grid.Column="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="58" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <sc:TvtAxisControl Grid.Column="1" Steering="{Binding}" />
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
+                              MaxWidth="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Grid}, Converter={StaticResource MinusAxis}}">
+                    <ItemsControl ItemsSource="{Binding VerticalTracks}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type st:TrackViewModel}">
+                                <Border BorderBrush="#D0D0D0" BorderThickness="0,0,1,0">
+                                    <sc:LogTrackControl Width="{Binding Size}" Track="{Binding}"
+                                                        Steering="{Binding DataContext, ElementName=root}" />
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+
+            <!-- right: properties -->
+            <Border Grid.Column="3" Width="340" BorderBrush="#CCC" BorderThickness="1,0,0,0" Background="#FAFAFA"
+                    Visibility="{Binding ShowProperties, Converter={StaticResource BoolToVis}}">
+                <TabControl x:Name="propTabs">
+                    <TabItem Header="Tracks &amp; curves">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel Margin="6">
+                                <ListBox ItemsSource="{Binding AllTracks}" SelectedItem="{Binding SelectedTrack}" Height="104" DisplayMemberPath="Summary" />
+                                <WrapPanel>
+                                    <Button Style="{StaticResource PanelBtn}" Content="+ Vertical" Click="AddVertical" />
+                                    <Button Style="{StaticResource PanelBtn}" Content="+ Horizontal" Click="AddHorizontal" />
+                                    <Button Style="{StaticResource PanelBtn}" Content="Remove track" Click="RemoveTrack" />
+                                </WrapPanel>
+
+                                <GroupBox Header="Selected track" IsEnabled="{Binding HasSelectedTrack}">
+                                    <Grid DataContext="{Binding SelectedTrack}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition /><RowDefinition /><RowDefinition />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Style="{StaticResource Lbl}" Text="Title" />
+                                        <TextBox Grid.Column="1" Grid.ColumnSpan="3" Text="{Binding Title, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBlock Grid.Row="1" Style="{StaticResource Lbl}" Text="Scale min" />
+                                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding ScaleMin}" />
+                                        <TextBlock Grid.Row="1" Grid.Column="2" Style="{StaticResource Lbl}" Text="  max" />
+                                        <TextBox Grid.Row="1" Grid.Column="3" Text="{Binding ScaleMax}" />
+                                        <CheckBox Grid.Row="2" Grid.ColumnSpan="2" Content="Logarithmic scale" IsChecked="{Binding LogScale}" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Row="2" Grid.Column="2" Style="{StaticResource Lbl}" Text="  Size" ToolTip="Width (vertical track) or height (horizontal track), px" />
+                                        <TextBox Grid.Row="2" Grid.Column="3" Text="{Binding Size}" />
+                                    </Grid>
+                                </GroupBox>
+
+                                <GroupBox Header="Curves in selected track" IsEnabled="{Binding HasSelectedTrack}">
+                                    <StackPanel>
+                                        <ListBox ItemsSource="{Binding SelectedTrack.Curves}" SelectedItem="{Binding SelectedCurve}" DisplayMemberPath="Display" Height="78" />
+                                        <ComboBox ItemsSource="{Binding AvailableCurves}" SelectedItem="{Binding CurveToAdd}" DisplayMemberPath="Display"
+                                                  ToolTip="realtime = actual well; offset = source/pilot well (plotted on TVT; in a horizontal track it is shown as its synthetic); synthetic = offset log looked up at each lateral sample's TVT; PZS model = PZS's stored _M curve" />
+                                        <WrapPanel>
+                                            <Button Style="{StaticResource PanelBtn}" Content="Add curve" Click="AddCurve" />
+                                            <Button Style="{StaticResource PanelBtn}" Content="Remove curve" Click="RemoveCurve" />
+                                        </WrapPanel>
+                                    </StackPanel>
+                                </GroupBox>
+
+                                <GroupBox Header="Selected curve: style and shading" IsEnabled="{Binding HasSelectedCurve}">
+                                    <Grid DataContext="{Binding SelectedCurve}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition />
+                                            <RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.ColumnSpan="2" Text="{Binding Display}" FontWeight="SemiBold" Margin="0,0,0,4" />
+                                        <TextBlock Grid.Row="1" Style="{StaticResource Lbl}" Text="Color" />
+                                        <ComboBox Grid.Row="1" Grid.Column="1" IsEditable="True" ItemTemplate="{StaticResource Swatch}"
+                                                  ItemsSource="{x:Static st:SteeringViewModel.Palette}" Text="{Binding Color, UpdateSourceTrigger=LostFocus}" />
+                                        <TextBlock Grid.Row="2" Style="{StaticResource Lbl}" Text="Thickness" />
+                                        <DockPanel Grid.Row="2" Grid.Column="1">
+                                            <TextBox DockPanel.Dock="Right" Width="44" Text="{Binding Thickness, StringFormat=0.##}" />
+                                            <Slider Minimum="0.5" Maximum="6" Value="{Binding Thickness}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                        </DockPanel>
+                                        <TextBlock Grid.Row="3" Style="{StaticResource Lbl}" Text="Line style" />
+                                        <ComboBox Grid.Row="3" Grid.Column="1" ItemsSource="{x:Static st:SteeringViewModel.LineStyles}" SelectedItem="{Binding LineStyle}" />
+                                        <CheckBox Grid.Row="4" Grid.Column="1" Content="Visible" IsChecked="{Binding Visible}" Margin="0,3" />
+                                        <TextBlock Grid.Row="5" Style="{StaticResource Lbl}" Text="Shading" />
+                                        <ComboBox Grid.Row="5" Grid.Column="1" ItemsSource="{x:Static st:SteeringViewModel.ShadingModes}" SelectedItem="{Binding ShadeMode}"
+                                                  ToolTip="ToCurve: fill to another curve in this track. ToTrackMin / ToTrackMax: fill to the track's scale minimum / maximum edge. Gradient: colour ramp by value from the track minimum." />
+                                        <TextBlock Grid.Row="6" Style="{StaticResource Lbl}" Text="Shade to" />
+                                        <ComboBox Grid.Row="6" Grid.Column="1" IsEnabled="{Binding NeedsOtherCurve}"
+                                                  ItemsSource="{Binding DataContext.ShadeCandidates, ElementName=root}" SelectedItem="{Binding ShadeOther}" />
+                                        <TextBlock Grid.Row="7" Style="{StaticResource Lbl}" Text="Fill color" />
+                                        <ComboBox Grid.Row="7" Grid.Column="1" IsEditable="True" ItemTemplate="{StaticResource Swatch}"
+                                                  ItemsSource="{x:Static st:SteeringViewModel.Palette}" Text="{Binding ShadeColor, UpdateSourceTrigger=LostFocus}" />
+                                        <TextBlock Grid.Row="8" Style="{StaticResource Lbl}" Text="Opacity" />
+                                        <Slider Grid.Row="8" Grid.Column="1" Minimum="0" Maximum="1" Value="{Binding ShadeOpacity}" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Row="9" Style="{StaticResource Lbl}" Text="Gradient ramp" />
+                                        <ComboBox Grid.Row="9" Grid.Column="1" ItemsSource="{x:Static st:SteeringViewModel.Ramps}" SelectedItem="{Binding Ramp}" />
+                                    </Grid>
+                                </GroupBox>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <TabItem Header="Bed boundaries">
+                        <DockPanel Margin="6">
+                            <StackPanel DockPanel.Dock="Top">
+                                <TextBlock TextWrapping="Wrap" Foreground="#444" Margin="0,0,0,4"
+                                           Text="User boundaries sit at a stratigraphic offset (TVT, ft, positive down) from the reference bed, parallel to the imported structure. Imported PZS beds can be restyled or hidden." />
+                                <WrapPanel>
+                                    <Button Style="{StaticResource PanelBtn}" Content="+ Add boundary" Click="AddBed" />
+                                    <Button Style="{StaticResource PanelBtn}" Content="Delete / hide" Click="RemoveBed" />
+                                </WrapPanel>
+                            </StackPanel>
+                            <DataGrid ItemsSource="{Binding Beds}" SelectedItem="{Binding SelectedBed}" AutoGenerateColumns="False"
+                                      CanUserAddRows="False" CanUserDeleteRows="False" HeadersVisibility="Column" RowHeight="24"
+                                      GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#E4E4E4">
+                                <DataGrid.Columns>
+                                    <DataGridCheckBoxColumn Header="Show" Binding="{Binding Visible, UpdateSourceTrigger=PropertyChanged}" />
+                                    <DataGridTemplateColumn Header="Name" Width="110">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBox Text="{Binding Name, UpdateSourceTrigger=LostFocus}" IsReadOnly="{Binding IsImported}" BorderThickness="0" Background="Transparent" ToolTip="{Binding KindText}" />
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTemplateColumn Header="TVT" Width="54">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Grid>
+                                                    <TextBox Text="{Binding Offset, UpdateSourceTrigger=LostFocus}" Visibility="{Binding IsUser, Converter={StaticResource BoolToVis}}" />
+                                                    <TextBlock Text="{Binding TvtText}" Foreground="#666" VerticalAlignment="Center"
+                                                               Visibility="{Binding IsImported, Converter={StaticResource BoolToVis}}" ToolTip="TVT of this imported bed at the offset well (read-only)" />
+                                                </Grid>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTemplateColumn Header="Color" Width="96">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <ComboBox IsEditable="True" ItemTemplate="{StaticResource Swatch}" Margin="0"
+                                                          ItemsSource="{x:Static st:SteeringViewModel.Palette}" Text="{Binding Color, UpdateSourceTrigger=LostFocus}" />
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTemplateColumn Header="Width" Width="40">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBox Text="{Binding Thickness, UpdateSourceTrigger=LostFocus}" BorderThickness="0" />
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridCheckBoxColumn Header="Label" Binding="{Binding ShowLabel, UpdateSourceTrigger=PropertyChanged}" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </DockPanel>
+                    </TabItem>
+
+                    <TabItem Header="Help">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <TextBlock Margin="8" TextWrapping="Wrap" xml:space="preserve">Curtain section (x = vertical section, y = TVD)
+  Wheel: zoom both axes at the cursor
+  Ctrl+wheel: horizontal only
+  Shift+wheel: vertical only
+  Drag in the plot: pan
+  Drag on the TVD axis (left): zoom TVD
+  Drag on the VS axis (bottom): zoom VS
+  Double-click: reset
+
+Horizontal tracks share the curtain's VS axis: wheel/drag there zooms/pans it too.
+
+Vertical tracks (y = TVT, reference bed = 0): wheel zooms TVT, drag pans, drag on the TVT axis zooms, double-click resets. Realtime samples are plotted at their own TVT, so they run down the track when the well drills down-structure, up when it climbs, and stack when it is parallel.
+
+Click a track to select it for editing.
+
+Workspace: tracks, curve styles/shading, bed boundaries, reference bed, mode and zoom are saved to a Gordon workspace JSON (Save workspace). PZS files are never written.</TextBlock>
+                        </ScrollViewer>
+                    </TabItem>
+                </TabControl>
+            </Border>
+        </Grid>
+    </DockPanel>
+</UserControl>
