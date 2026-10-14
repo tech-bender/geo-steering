@@ -4,6 +4,8 @@ using System.Text;
 using System.Windows;
 using GordonGeoSteer.Model;
 using GordonGeoSteer.Services;
+using GordonGeoSteer.ViewModels.Steering;
+using GordonGeoSteer.Engine.Steering;
 
 namespace GordonGeoSteer.ViewModels;
 
@@ -170,6 +172,7 @@ public sealed class MainViewModel : ObservableObject
         Document = doc;
         ProjectJsonPath = Path.GetFullPath(projectJsonPath);
         BuildTree(doc, importerLog);
+        BuildSteering(doc);
 
         var warn = doc.Migration?.Warnings ?? new();
         int failed = doc.Migration?.CrossChecks.Count(c => !c.Pass) ?? 0;
@@ -231,4 +234,35 @@ public sealed class MainViewModel : ObservableObject
     }
 
     public IEnumerable<TreeNode> AllNodes() => Nodes.SelectMany(n => n.SelfAndDescendants());
+
+    // ------------------------------------------------------------------ steering view
+
+    SteeringViewModel? _steering;
+    /// <summary>The steering view for the project's (first) geosteering model; null if it could not be built.</summary>
+    public SteeringViewModel? Steering { get => _steering; private set { if (Set(ref _steering, value)) OnPropertyChanged(nameof(HasSteering)); } }
+    public bool HasSteering => _steering != null;
+
+    string _steeringMessage = "Load a project to use the steering view.";
+    public string SteeringMessage { get => _steeringMessage; private set => Set(ref _steeringMessage, value); }
+
+    /// <summary>Overrides where the steering workspace is read/written (self-test uses its report folder).</summary>
+    public string? WorkspacePathOverride { get; set; }
+
+    void BuildSteering(ProjectDocument doc)
+    {
+        Steering = null;
+        if (doc.Models.Count == 0) { SteeringMessage = "This project has no geosteering model (.pzscfg), so there is nothing to steer against."; return; }
+        try
+        {
+            var sp = SteeringProject.Build(doc, ProjectDir!);
+            var vm = new SteeringViewModel(sp, WorkspacePathOverride);
+            vm.LoadOrDefault();
+            Steering = vm;
+            SteeringMessage = "";
+        }
+        catch (Exception ex)
+        {
+            SteeringMessage = "The steering view could not be built for this project:" + Environment.NewLine + ex;
+        }
+    }
 }

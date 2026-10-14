@@ -6,6 +6,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using GordonGeoSteer.Services;
 using GordonGeoSteer.ViewModels;
+using GordonGeoSteer.Views;
 using Microsoft.Win32;
 
 namespace GordonGeoSteer;
@@ -67,13 +68,74 @@ public partial class MainWindow : Window
     }
 
     void About_Click(object sender, RoutedEventArgs e) => MessageBox.Show(this,
-        "GordonGeoSteer v1 (0.1.0) - Gordon Technologies\n\n" +
+        "GordonGeoSteer (0.2.0) - Gordon Technologies\n\n" +
         "Imports a PZS project folder via the external PzsImporter tool and browses the resulting\n" +
         "gordon.geosteering.project JSON: wells, curves, surveys, targets, geology model, file inventory.\n\n" +
-        "Browse-only: no survey calculation, geosteering editing or real-time feed in this version.",
+        "Steering view: curtain section, TVT log tracks, synthetic logs, curve styling/shading and bed\n" +
+        "boundaries, saved to a Gordon workspace file. No real-time feed or geomod editing yet.",
         "About GordonGeoSteer");
 
     void Exit_Click(object sender, RoutedEventArgs e) => Close();
+
+    // ------------------------------------------------------------------ steering view
+
+    public void ShowSteering() { mainTabs.SelectedItem = steeringTab; }
+    public void ShowBrowse() { mainTabs.SelectedIndex = 0; }
+    public SteeringView SteeringViewControl => steeringView;
+
+    void ShowSteering_Click(object sender, RoutedEventArgs e) => ShowSteering();
+
+    void SaveWorkspace_Click(object sender, RoutedEventArgs e)
+    {
+        if (VM.Steering == null) return;
+        try { VM.Steering.Save(); VM.Status = VM.Steering.Status; }
+        catch (Exception ex) { MessageBox.Show(this, ex.Message, "Save workspace failed", MessageBoxButton.OK, MessageBoxImage.Error); }
+    }
+
+    void SaveWorkspaceAs_Click(object sender, RoutedEventArgs e)
+    {
+        if (VM.Steering == null) return;
+        var dlg = new SaveFileDialog
+        {
+            Title = "Save GordonGeoSteer workspace", Filter = "Gordon workspace (*.gws.json)|*.gws.json",
+            FileName = Path.GetFileName(VM.Steering.WorkspacePath), InitialDirectory = Path.GetDirectoryName(VM.Steering.WorkspacePath),
+        };
+        if (dlg.ShowDialog(this) != true) return;
+        try { VM.Steering.Save(dlg.FileName); VM.Status = VM.Steering.Status; }
+        catch (Exception ex) { MessageBox.Show(this, ex.Message, "Save workspace failed", MessageBoxButton.OK, MessageBoxImage.Error); }
+    }
+
+    void LoadWorkspace_Click(object sender, RoutedEventArgs e)
+    {
+        if (VM.Steering == null) return;
+        var dlg = new OpenFileDialog { Title = "Load GordonGeoSteer workspace", Filter = "Gordon workspace (*.gws.json;*.json)|*.gws.json;*.json" };
+        if (dlg.ShowDialog(this) != true) return;
+        try { VM.Steering.Load(dlg.FileName); ShowSteering(); }
+        catch (Exception ex) { MessageBox.Show(this, ex.Message, "Load workspace failed", MessageBoxButton.OK, MessageBoxImage.Error); }
+    }
+
+    void ResetWorkspace_Click(object sender, RoutedEventArgs e)
+    {
+        if (VM.Steering == null) return;
+        VM.Steering.ApplyWorkspace(VM.Steering.DefaultWorkspace());
+        VM.Steering.Status = "Layout reset to defaults (not saved yet).";
+        ShowSteering();
+    }
+
+    void Validation_Click(object sender, RoutedEventArgs e)
+    {
+        if (VM.Steering == null) return;
+        string text;
+        try { text = Engine.Validation.EngineValidation.Run(VM.Steering.Project).Text; }
+        catch (Exception ex) { text = "Validation failed: " + ex; }
+        var w = new Window
+        {
+            Title = "Engine validation", Width = 1000, Height = 640, Owner = this,
+            Content = new TextBox { Text = text, IsReadOnly = true, FontFamily = new FontFamily("Consolas"), FontSize = 12,
+                                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto },
+        };
+        w.Show();
+    }
 
     // ------------------------------------------------------------------ self-test support
 
