@@ -7,6 +7,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{2C43AA98-B25
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GordonGeoSteer", "src\GordonGeoSteer\GordonGeoSteer.csproj", "{90A346A7-CA81-4233-81BF-8ABD13BBC8FC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GordonGeoSteer.Engine", "src\GordonGeoSteer.Engine\GordonGeoSteer.Engine.csproj", "{06F7FA23-FA43-42B7-BB16-E98AA94B1074}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{2FE5646A-E54A-435E-9FA8-C718D4D6588E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GordonGeoSteer.Engine.Tests", "tests\GordonGeoSteer.Engine.Tests\GordonGeoSteer.Engine.Tests.csproj", "{33487EDA-1589-4670-A49E-A7C33D0B1C96}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -20,8 +26,18 @@ Global
 		{90A346A7-CA81-4233-81BF-8ABD13BBC8FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{90A346A7-CA81-4233-81BF-8ABD13BBC8FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{90A346A7-CA81-4233-81BF-8ABD13BBC8FC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{06F7FA23-FA43-42B7-BB16-E98AA94B1074}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{06F7FA23-FA43-42B7-BB16-E98AA94B1074}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{06F7FA23-FA43-42B7-BB16-E98AA94B1074}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{06F7FA23-FA43-42B7-BB16-E98AA94B1074}.Release|Any CPU.Build.0 = Release|Any CPU
+		{33487EDA-1589-4670-A49E-A7C33D0B1C96}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{33487EDA-1589-4670-A49E-A7C33D0B1C96}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{33487EDA-1589-4670-A49E-A7C33D0B1C96}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{33487EDA-1589-4670-A49E-A7C33D0B1C96}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{90A346A7-CA81-4233-81BF-8ABD13BBC8FC} = {2C43AA98-B250-4EB3-A939-A5BF3C89004B}
+		{06F7FA23-FA43-42B7-BB16-E98AA94B1074} = {2C43AA98-B250-4EB3-A939-A5BF3C89004B}
+		{33487EDA-1589-4670-A49E-A7C33D0B1C96} = {2FE5646A-E54A-435E-9FA8-C718D4D6588E}
 	EndGlobalSection
 EndGlobal

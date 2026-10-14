@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    GordonGeoSteer engine: survey math, bed structure / geomod evaluation, TVT and offset-log
+    correlation, plus the project-JSON model and the Gordon workspace file. No WPF dependency, so it
+    is unit-testable and reusable from tools.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>GordonGeoSteer.Engine</RootNamespace>
+    <AssemblyName>GordonGeoSteer.Engine</AssemblyName>
+    <Version>0.2.0</Version>
+    <Company>Gordon Technologies</Company>
+    <Product>GordonGeoSteer</Product>
+  </PropertyGroup>
+
+</Project>

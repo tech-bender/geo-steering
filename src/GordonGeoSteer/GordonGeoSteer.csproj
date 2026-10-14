@@ -20,9 +20,10 @@
     at PzsImporter\PzsImporter.exe. The app never references it as a library - it only runs it as a process.
   -->
   <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)..\..\tools\PzsImporter\bin\PzsImporter.exe')">
-    <None Include="$(MSBuildThisFileDirectory)..\..\tools\PzsImporter\bin\PzsImporter.exe"
-          Link="PzsImporter\PzsImporter.exe"
-          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(MSBuildThisFileDirectory)..\..\tools\PzsImporter\bin\PzsImporter.exe" Link="PzsImporter\PzsImporter.exe" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\GordonGeoSteer.Engine\GordonGeoSteer.Engine.csproj" />
   </ItemGroup>
 
 </Project>
